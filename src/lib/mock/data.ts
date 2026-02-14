@@ -1,0 +1,143 @@
+import { User, Projekt, Teilsystem, Position, Material, Lieferant, Mitarbeiter } from '@/types';
+
+export const mockUser: User = {
+    id: 'u1',
+    vorname: 'Admin',
+    nachname: 'Methabau',
+    email: 'admin@methabau.ch',
+    department: 'IT / Management',
+    role: 'admin',
+};
+
+export const mockProjekte: Projekt[] = [
+    {
+        id: 'p1',
+        projektnummer: '1000222',
+        projektname: 'GAZ Beringen',
+        strasse: 'Neuhausenstrasse',
+        plz: '8222',
+        ort: 'Beringen',
+        kanton: 'Schaffhausen',
+        projektleiter: 'M.Dean',
+        bauleiter: 'F.Störchli',
+        polier: 'F.Martinez',
+        bimKonstrukteur: 'Moritz',
+        status: 'in arbeit',
+        createdAt: '2024-01-15T10:00:00Z',
+    },
+    {
+        id: 'p2',
+        projektnummer: '2024-002',
+        projektname: 'Sanierung Wohnpark Süd',
+        ort: 'Winterthur',
+        kanton: 'ZH',
+        status: 'offen',
+        createdAt: '2024-02-01T08:30:00Z',
+    },
+];
+
+export const mockTeilsysteme: Teilsystem[] = [
+    {
+        id: 'ts2644',
+        projektId: 'p1',
+        ks: '1',
+        teilsystemNummer: '',
+        name: 'Bodenabschlüsse',
+        beschreibung: 'Bereich Bodenabschlüsse',
+        eroeffnetAm: '17.07.2025',
+        eroeffnetDurch: 'Moritz',
+        planStatus: 'offen',
+        status: 'offen',
+    },
+    {
+        id: 'ts2604',
+        projektId: 'p1',
+        ks: '1',
+        teilsystemNummer: '1050',
+        name: 'Baukran',
+        beschreibung: 'Installation Baukran',
+        eroeffnetAm: '17.07.2025',
+        eroeffnetDurch: 'Moritz',
+        montagetermin: 'Do 04.12.2025',
+        planStatus: 'offen',
+        status: 'offen',
+    },
+    {
+        id: 'ts2867',
+        projektId: 'p1',
+        ks: '1',
+        teilsystemNummer: '1051',
+        name: 'Fundamente Kran',
+        beschreibung: 'Betonarbeiten Kranfundamente',
+        eroeffnetAm: '17.09.2025',
+        eroeffnetDurch: 'Andrej',
+        status: 'offen',
+    },
+    {
+        id: 'ts2605',
+        projektId: 'p1',
+        ks: 'BKP',
+        teilsystemNummer: '1120',
+        name: 'Rühlwand - Baugrube',
+        beschreibung: 'Baugrubensicherung',
+        bemerkung: 'BKP 171.1 Baugrube Trägeraufsatz Rühlwand',
+        eroeffnetAm: '17.07.2025',
+        eroeffnetDurch: 'Moritz',
+        montagetermin: 'Di 03.02.2026',
+        planStatus: 'fertig',
+        wemaLink: '\\\\daten01\\data\\C',
+        status: 'bestellt',
+    },
+    {
+        id: 'ts2869',
+        projektId: 'p1',
+        ks: '1',
+        teilsystemNummer: '1121',
+        name: 'Trägeraufsatz Rühlw',
+        beschreibung: 'Montage Aufsatzteile',
+        eroeffnetAm: '17.09.2025',
+        eroeffnetDurch: 'Andrej',
+        montagetermin: 'Fr 06.02.2026',
+        planStatus: 'fertig',
+        status: 'verbaut',
+    },
+    {
+        id: 'ts2606',
+        projektId: 'p1',
+        ks: 'BKP',
+        teilsystemNummer: '1200',
+        name: 'Kanalisation',
+        beschreibung: 'Entwässerungsleitungen',
+        eroeffnetAm: '17.07.2025',
+        eroeffnetDurch: 'Moritz',
+        montagetermin: 'Do 20.11.2025',
+        status: 'offen',
+    },
+    {
+        id: 'ts2607',
+        projektId: 'p1',
+        ks: 'BKP',
+        teilsystemNummer: '1210',
+        name: 'Rinnen',
+        beschreibung: 'Einbau Entwässerungsrinnen',
+        eroeffnetAm: '17.07.2025',
+        eroeffnetDurch: 'Moritz',
+        planStatus: 'offen',
+        status: 'offen',
+    },
+];
+
+export const mockPositionen: Position[] = [
+    {
+        id: 'pos1',
+        teilsystemId: 'ts2605',
+        name: 'Stahlträger HEB 200',
+        menge: 12,
+        einheit: 'Stk',
+        status: 'bestellt',
+    },
+];
+
+export const mockMaterial: Material[] = [];
+export const mockLieferanten: Lieferant[] = [];
+export const mockMitarbeiter: Mitarbeiter[] = [];
