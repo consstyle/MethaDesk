@@ -16,6 +16,7 @@ export const ProjectMapper = {
         ort: db.ort,
         kanton: db.kanton,
         status: db.status as any,
+        imageUrl: db.image_url || undefined,
         createdAt: db.created_at,
         createdBy: db.created_by || undefined,
         // TODO: Map these when we have relations or extended profile data
@@ -35,6 +36,7 @@ export const ProjectMapper = {
         ort: app.ort,
         kanton: app.kanton,
         status: app.status,
+        image_url: app.imageUrl,
         created_by: app.createdBy,
     })
 };

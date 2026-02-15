@@ -28,6 +28,7 @@ export interface Projekt {
   polier?: string;
   einkauf?: string;
   status: ProjektStatus;
+  imageUrl?: string;
   createdBy?: string;
   createdAt: string;
 }

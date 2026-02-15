@@ -59,6 +59,7 @@ const projektSchema = z.object({
     polier: z.string().optional(),
     bimKonstrukteur: z.string().optional(),
     status: z.string().min(1, 'Status ist erforderlich'),
+    // imageUrl is handled separately via state
 });
 
 type ProjektValues = z.infer<typeof projektSchema>;
@@ -66,6 +67,8 @@ type ProjektValues = z.infer<typeof projektSchema>;
 export default function ProjektErfassenPage() {
     const router = useRouter();
     const { currentUser } = useProjekt();
+    const [imageFile, setImageFile] = React.useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
 
     const {
         register,
@@ -79,20 +82,40 @@ export default function ProjektErfassenPage() {
         }
     });
 
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setImageFile(file);
+            const objectUrl = URL.createObjectURL(file);
+            setPreviewUrl(objectUrl);
+        }
+    };
+
     const onSubmit = async (data: ProjektValues) => {
         try {
+            let uploadedImageUrl = undefined;
+
+            if (imageFile) {
+                try {
+                    uploadedImageUrl = await ProjectService.uploadImage(imageFile);
+                } catch (uploadError) {
+                    console.error('Image upload failed:', uploadError);
+                    window.alert('Bild-Upload fehlgeschlagen. Projekt wird ohne Bild erstellt.');
+                }
+            }
+
             await ProjectService.createProjekt({
                 ...data,
-                status: data.status as any, // Cast to any or ProjektStatus to satisfy type
+                status: data.status as any,
+                imageUrl: uploadedImageUrl,
                 createdBy: currentUser?.id
             });
-            // toast.success('Projekt erfolgreich erstellt');
+
             window.alert('Projekt erfolgreich erstellt');
             router.push('/projekte');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to create project:', error);
-            // toast.error('Fehler beim Erstellen des Projekts');
-            window.alert('Fehler beim Erstellen des Projekts');
+            window.alert(`Fehler beim Erstellen des Projekts: ${error.message || JSON.stringify(error)}`);
         }
     };
 
@@ -119,6 +142,25 @@ export default function ProjektErfassenPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-8 space-y-8">
+                        {/* Image Upload */}
+                        <div className="flex flex-col gap-4">
+                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Projektbild</label>
+                            <div className="flex items-center gap-4">
+                                {previewUrl && (
+                                    <div className="relative h-20 w-32 rounded-md overflow-hidden border border-slate-200">
+                                        <img src={previewUrl} alt="Vorschau" className="h-full w-full object-cover" />
+                                    </div>
+                                )}
+                                <Input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                    className="cursor-pointer file:cursor-pointer file:text-primary file:font-semibold"
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground">Optional. JPG, PNG bis 5MB.</p>
+                        </div>
+
                         {/* Basic Info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="relative">

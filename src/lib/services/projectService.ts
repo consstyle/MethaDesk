@@ -47,5 +47,25 @@ export const ProjectService = {
 
         if (error) throw error;
         return ProjectMapper.toApp(data);
+    },
+
+    async uploadImage(file: File): Promise<string> {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('project-images')
+            .upload(filePath, file);
+
+        if (uploadError) {
+            throw uploadError;
+        }
+
+        const { data } = supabase.storage
+            .from('project-images')
+            .getPublicUrl(filePath);
+
+        return data.publicUrl;
     }
 };
