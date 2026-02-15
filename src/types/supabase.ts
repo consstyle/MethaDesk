@@ -56,6 +56,12 @@ export interface Database {
                     status: string
                     image_url: string | null
                     created_by: string | null
+                    projektleiter: string | null
+                    bauleiter: string | null
+                    polier: string | null
+                    bim_konstrukteur: string | null
+                    deviseur: string | null
+                    einkauf: string | null
                     created_at: string
                     updated_at: string
                 }
@@ -70,6 +76,12 @@ export interface Database {
                     status?: string
                     image_url?: string | null
                     created_by?: string | null
+                    projektleiter?: string | null
+                    bauleiter?: string | null
+                    polier?: string | null
+                    bim_konstrukteur?: string | null
+                    deviseur?: string | null
+                    einkauf?: string | null
                     created_at?: string
                     updated_at?: string
                 }
@@ -84,6 +96,12 @@ export interface Database {
                     status?: string
                     image_url?: string | null
                     created_by?: string | null
+                    projektleiter?: string | null
+                    bauleiter?: string | null
+                    polier?: string | null
+                    bim_konstrukteur?: string | null
+                    deviseur?: string | null
+                    einkauf?: string | null
                     created_at?: string
                     updated_at?: string
                 }

@@ -19,13 +19,12 @@ export const ProjectMapper = {
         imageUrl: db.image_url || undefined,
         createdAt: db.created_at,
         createdBy: db.created_by || undefined,
-        // TODO: Map these when we have relations or extended profile data
-        projektleiter: undefined,
-        deviseur: undefined,
-        bimKonstrukteur: undefined,
-        bauleiter: undefined,
-        polier: undefined,
-        einkauf: undefined,
+        projektleiter: db.projektleiter || undefined,
+        deviseur: db.deviseur || undefined,
+        bimKonstrukteur: db.bim_konstrukteur || undefined,
+        bauleiter: db.bauleiter || undefined,
+        polier: db.polier || undefined,
+        einkauf: db.einkauf || undefined,
     }),
     toDB: (app: Partial<Projekt>) => ({
         // Used for inserts/updates
@@ -38,6 +37,12 @@ export const ProjectMapper = {
         status: app.status,
         image_url: app.imageUrl,
         created_by: app.createdBy,
+        projektleiter: app.projektleiter,
+        bauleiter: app.bauleiter,
+        polier: app.polier,
+        bim_konstrukteur: app.bimKonstrukteur,
+        deviseur: app.deviseur,
+        einkauf: app.einkauf,
     })
 };
 
