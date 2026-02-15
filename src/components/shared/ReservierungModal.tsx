@@ -14,16 +14,17 @@ interface ReservierungModalProps {
     onClose: () => void;
     onSave: (reservierung: FahrzeugReservierung) => void;
     fahrzeug?: Fahrzeug;
+    projektId?: string;
 }
 
-export function ReservierungModal({ isOpen, onClose, onSave, fahrzeug }: ReservierungModalProps) {
+export function ReservierungModal({ isOpen, onClose, onSave, fahrzeug, projektId }: ReservierungModalProps) {
     const [projekte, setProjekte] = useState<Projekt[]>([]);
     const [fahrzeugeList, setFahrzeugeList] = useState<Fahrzeug[]>([]);
     const [loadingData, setLoadingData] = useState(false);
 
     const [form, setForm] = useState({
         fahrzeugId: fahrzeug?.id || '',
-        projektId: '',
+        projektId: projektId || '',
         baustelle: '',
         reserviertAb: '',
         reserviertBis: '',
@@ -49,10 +50,12 @@ export function ReservierungModal({ isOpen, onClose, onSave, fahrzeug }: Reservi
     }, [isOpen]);
 
     useEffect(() => {
-        if (fahrzeug) {
-            setForm(prev => ({ ...prev, fahrzeugId: fahrzeug.id }));
-        }
-    }, [fahrzeug]);
+        setForm(prev => ({
+            ...prev,
+            fahrzeugId: fahrzeug?.id || prev.fahrzeugId || '',
+            projektId: projektId || prev.projektId || ''
+        }));
+    }, [fahrzeug, projektId]);
 
     if (!isOpen) return null;
 
