@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { FleetService } from '@/lib/services/fleetService';
-import { FahrzeugKategorie, FahrzeugStatus } from '@/types';
-import { ArrowLeft, Save, Car, AlertTriangle } from 'lucide-react';
+import { mockStore } from '@/lib/mock/store';
+import { Fahrzeug, FahrzeugKategorie, FahrzeugStatus } from '@/types';
+import { ArrowLeft, Save, Car } from 'lucide-react';
 import Link from 'next/link';
 
 const KATEGORIE_OPTIONS = [
@@ -41,9 +41,8 @@ const ANTRIEB_OPTIONS = [
 ];
 
 export default function FahrzeugErfassenPage() {
+    const { projektId } = useParams() as { projektId: string };
     const router = useRouter();
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     const [form, setForm] = useState({
         bezeichnung: '',
@@ -72,48 +71,44 @@ export default function FahrzeugErfassenPage() {
 
     const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
-    const handleSave = async () => {
+    const handleSave = () => {
         if (!form.bezeichnung || !form.kategorie || !form.inventarnummer) return;
-        setLoading(true);
-        setError(null);
 
-        try {
-            await FleetService.createFahrzeug({
-                bezeichnung: form.bezeichnung,
-                kategorie: form.kategorie as FahrzeugKategorie,
-                inventarnummer: form.inventarnummer,
-                fabrikat: form.fabrikat || undefined,
-                typ: form.typ || undefined,
-                seriennummer: form.seriennummer || undefined,
-                farbe: form.farbe || undefined,
-                kennzeichen: form.kennzeichen || undefined,
-                plattformhoehe: form.plattformhoehe || undefined,
-                masse: form.masse || undefined,
-                leistung: form.leistung || undefined,
-                gewicht: form.gewicht || undefined,
-                nutzlast: form.nutzlast || undefined,
-                reichweite: form.reichweite || undefined,
-                antrieb: form.antrieb || undefined,
-                baujahr: form.baujahr ? parseInt(form.baujahr) : undefined,
-                spezHinweis: form.spezHinweis || undefined,
-                kaufjahr: form.kaufjahr || undefined,
-                geprueftBis: form.geprueftBis || undefined,
-                abgaswartung: form.abgaswartung || undefined,
-                status: form.status,
-                bemerkung: form.bemerkung || undefined,
-            });
-            router.push('/fuhrpark');
-        } catch (err) {
-            console.error('Error creating fahrzeug:', err);
-            setError('Fehler beim Speichern. Bitte versuchen Sie es erneut.');
-            setLoading(false);
-        }
+        const newFahrzeug: Fahrzeug = {
+            id: `fz-${Date.now()}`,
+            bezeichnung: form.bezeichnung,
+            kategorie: form.kategorie as FahrzeugKategorie,
+            inventarnummer: form.inventarnummer,
+            fabrikat: form.fabrikat || undefined,
+            typ: form.typ || undefined,
+            seriennummer: form.seriennummer || undefined,
+            farbe: form.farbe || undefined,
+            kennzeichen: form.kennzeichen || undefined,
+            plattformhoehe: form.plattformhoehe || undefined,
+            masse: form.masse || undefined,
+            leistung: form.leistung || undefined,
+            gewicht: form.gewicht || undefined,
+            reichweite: form.reichweite || undefined,
+            nutzlast: form.nutzlast || undefined,
+            antrieb: form.antrieb || undefined,
+            baujahr: form.baujahr ? parseInt(form.baujahr) : undefined,
+            spezHinweis: form.spezHinweis || undefined,
+            kaufjahr: form.kaufjahr || undefined,
+            geprueftBis: form.geprueftBis || undefined,
+            abgaswartung: form.abgaswartung || undefined,
+            status: form.status,
+            bemerkung: form.bemerkung || undefined,
+        };
+
+        const existing = mockStore.getFahrzeuge();
+        mockStore.saveFahrzeuge([...existing, newFahrzeug]);
+        router.push(`/${projektId}/fuhrpark`);
     };
 
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
-                <Link href="/fuhrpark">
+                <Link href={`/${projektId}/fuhrpark`}>
                     <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-foreground">
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
@@ -123,13 +118,6 @@ export default function FahrzeugErfassenPage() {
                     <p className="text-muted-foreground font-medium mt-1">Bühne oder Baumaschine zum Fuhrpark hinzufügen.</p>
                 </div>
             </div>
-
-            {error && (
-                <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5" />
-                    <span className="font-bold">{error}</span>
-                </div>
-            )}
 
             <Card>
                 <CardHeader>
@@ -192,19 +180,15 @@ export default function FahrzeugErfassenPage() {
 
                     {/* Actions */}
                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-                        <Link href="/fuhrpark">
-                            <Button variant="ghost" disabled={loading}>Abbrechen</Button>
+                        <Link href={`/${projektId}/fuhrpark`}>
+                            <Button variant="ghost">Abbrechen</Button>
                         </Link>
                         <Button
                             onClick={handleSave}
                             className="font-bold shadow-lg shadow-primary/20"
-                            disabled={!form.bezeichnung || !form.kategorie || !form.inventarnummer || loading}
+                            disabled={!form.bezeichnung || !form.kategorie || !form.inventarnummer}
                         >
-                            {loading ? (
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent mr-2" />
-                            ) : (
-                                <Save className="h-4 w-4 mr-2" />
-                            )}
+                            <Save className="h-4 w-4 mr-2" />
                             Maschine speichern
                         </Button>
                     </div>

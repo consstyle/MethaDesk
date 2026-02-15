@@ -1,17 +1,19 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import { ReservierungModal } from '@/components/shared/ReservierungModal';
-import { FleetService } from '@/lib/services/fleetService';
+import { mockStore } from '@/lib/mock/store';
 import { Fahrzeug, FahrzeugReservierung } from '@/types';
 import {
-    Plus, Search, Eye, Trash2, CalendarPlus,
-    Car, Wrench, CheckCircle2, Calendar, AlertTriangle
+    Plus, Search, Eye, Edit, Trash2, CalendarPlus,
+    Car, Wrench, AlertTriangle, CheckCircle2, Calendar
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -37,59 +39,40 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warni
 };
 
 export default function FuhrparkPage() {
+    const { projektId } = useParams() as { projektId: string };
     const [fahrzeuge, setFahrzeuge] = useState<Fahrzeug[]>([]);
     const [reservierungen, setReservierungen] = useState<FahrzeugReservierung[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('fahrzeuge');
     const [searchTerm, setSearchTerm] = useState('');
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedFahrzeug, setSelectedFahrzeug] = useState<Fahrzeug | undefined>();
 
-    const loadData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const [fzData, resData] = await Promise.all([
-                FleetService.getFahrzeuge(),
-                FleetService.getReservierungen()
-            ]);
-            setFahrzeuge(fzData);
-            setReservierungen(resData);
-        } catch (err) {
-            console.error('Error loading Fuhrpark data:', err);
-            setError('Fehler beim Laden der Daten. Bitte prüfen Sie Ihre Verbindung.');
-        } finally {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setFahrzeuge(mockStore.getFahrzeuge());
+            setReservierungen(mockStore.getReservierungen());
             setLoading(false);
-        }
+        }, 400);
+        return () => clearTimeout(timer);
     }, []);
 
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
-
-    const handleDeleteFahrzeug = async (id: string) => {
+    const handleDeleteFahrzeug = (id: string) => {
         if (!confirm('Sind Sie sicher, dass Sie dieses Fahrzeug löschen möchten?')) return;
-        try {
-            await FleetService.deleteFahrzeug(id);
-            setFahrzeuge(prev => prev.filter(f => f.id !== id));
-        } catch (err) {
-            console.error(err);
-            alert('Fehler beim Löschen des Fahrzeugs.');
-        }
+        const updated = fahrzeuge.filter(f => f.id !== id);
+        mockStore.saveFahrzeuge(updated);
+        setFahrzeuge(updated);
+
+        const updatedRes = reservierungen.filter(r => r.fahrzeugId !== id);
+        mockStore.saveReservierungen(updatedRes);
+        setReservierungen(updatedRes);
     };
 
-    const handleDeleteReservierung = async (id: string) => {
+    const handleDeleteReservierung = (id: string) => {
         if (!confirm('Reservierung wirklich löschen?')) return;
-        try {
-            await FleetService.deleteReservierung(id);
-            setReservierungen(prev => prev.filter(r => r.id !== id));
-            // Optional: Check if we need to set vehicle status back to 'verfuegbar'
-            // For now, simpler to just reload or let user handle status via Edit
-        } catch (err) {
-            console.error(err);
-            alert('Fehler beim Löschen der Reservierung.');
-        }
+        const updated = reservierungen.filter(r => r.id !== id);
+        mockStore.saveReservierungen(updated);
+        setReservierungen(updated);
     };
 
     const handleReserve = (fahrzeug: Fahrzeug) => {
@@ -97,31 +80,16 @@ export default function FuhrparkPage() {
         setModalOpen(true);
     };
 
-    const handleSaveReservierung = async (newRes: FahrzeugReservierung) => {
-        try {
-            // 1. Create Reservation
-            const createdRes = await FleetService.createReservierung({
-                fahrzeugId: newRes.fahrzeugId,
-                projektId: newRes.projektId,
-                baustelle: newRes.baustelle,
-                reserviertAb: newRes.reserviertAb,
-                reserviertBis: newRes.reserviertBis,
-                reserviertDurch: newRes.reserviertDurch,
-                bemerkung: newRes.bemerkung
-            });
+    const handleSaveReservierung = (newRes: FahrzeugReservierung) => {
+        const updated = [...reservierungen, newRes];
+        mockStore.saveReservierungen(updated);
+        setReservierungen(updated);
 
-            // 2. Update Vehicle Status
-            await FleetService.updateFahrzeug(newRes.fahrzeugId, { status: 'reserviert' });
-
-            // 3. Refresh UI
-            setReservierungen(prev => [...prev, createdRes]);
-            setFahrzeuge(prev => prev.map(f => f.id === newRes.fahrzeugId ? { ...f, status: 'reserviert' } : f));
-
-            setModalOpen(false);
-        } catch (err) {
-            console.error(err);
-            alert('Fehler beim Speichern der Reservierung.');
-        }
+        const fzUpdated = fahrzeuge.map(f =>
+            f.id === newRes.fahrzeugId ? { ...f, status: 'reserviert' as const } : f
+        );
+        mockStore.saveFahrzeuge(fzUpdated);
+        setFahrzeuge(fzUpdated);
     };
 
     const filteredFahrzeuge = fahrzeuge.filter(f => {
@@ -141,19 +109,6 @@ export default function FuhrparkPage() {
         return fz ? `${fz.bezeichnung} (${fz.inventarnummer})` : fahrzeugId;
     };
 
-    if (error) {
-        return (
-            <div className="flex h-64 items-center justify-center flex-col gap-4">
-                <div className="flex items-center gap-2 text-red-500">
-                    <AlertTriangle className="h-6 w-6" />
-                    <span className="font-bold">Es ist ein Fehler aufgetreten</span>
-                </div>
-                <p className="text-muted-foreground">{error}</p>
-                <Button onClick={loadData}>Erneut versuchen</Button>
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -161,7 +116,7 @@ export default function FuhrparkPage() {
                     <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Fuhrpark</h1>
                     <p className="text-muted-foreground font-medium mt-1">Bühnen und Baumaschinen – Verwaltung und Disposition.</p>
                 </div>
-                <Link href="/fuhrpark/erfassen">
+                <Link href={`/${projektId}/fuhrpark/erfassen`}>
                     <Button className="font-bold shadow-lg shadow-primary/20">
                         <Plus className="h-5 w-5 mr-2" />
                         Neue Maschine
@@ -218,14 +173,14 @@ export default function FuhrparkPage() {
             </div>
 
             {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs>
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                     <TabsList>
-                        <TabsTrigger value="fahrzeuge">
+                        <TabsTrigger active={activeTab === 'fahrzeuge'} onClick={() => setActiveTab('fahrzeuge')}>
                             <Car className="h-4 w-4 mr-2" />
                             Fahrzeuge
                         </TabsTrigger>
-                        <TabsTrigger value="reservierungen">
+                        <TabsTrigger active={activeTab === 'reservierungen'} onClick={() => setActiveTab('reservierungen')}>
                             <Calendar className="h-4 w-4 mr-2" />
                             Reservierungen ({reservierungen.length})
                         </TabsTrigger>
@@ -246,7 +201,7 @@ export default function FuhrparkPage() {
                 </div>
 
                 {/* Tab: Fahrzeuge */}
-                <TabsContent value="fahrzeuge">
+                <TabsContent active={activeTab === 'fahrzeuge'}>
                     <Card>
                         <CardContent className="p-0">
                             {loading ? (
@@ -311,7 +266,7 @@ export default function FuhrparkPage() {
                                                         </TableCell>
                                                         <TableCell className="text-right">
                                                             <div className="flex justify-end gap-1">
-                                                                <Link href={`/fuhrpark/${item.id}`}>
+                                                                <Link href={`/${projektId}/fuhrpark/${item.id}`}>
                                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-muted hover:shadow-sm">
                                                                         <Eye className="h-4 w-4" />
                                                                     </Button>
@@ -347,7 +302,7 @@ export default function FuhrparkPage() {
                 </TabsContent>
 
                 {/* Tab: Reservierungen */}
-                <TabsContent value="reservierungen">
+                <TabsContent active={activeTab === 'reservierungen'}>
                     <div className="flex justify-end mb-4">
                         <Button
                             className="font-bold shadow-lg shadow-primary/20"
@@ -388,7 +343,7 @@ export default function FuhrparkPage() {
                                                     <span className="font-bold text-foreground">{getFahrzeugName(res.fahrzeugId)}</span>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <span className="text-muted-foreground font-medium">{res.projektName || res.projektId || '–'}</span>
+                                                    <span className="text-muted-foreground font-medium">{res.projektName || res.projektId}</span>
                                                 </TableCell>
                                                 <TableCell>
                                                     <span className="font-semibold text-foreground">{res.baustelle}</span>
@@ -428,6 +383,7 @@ export default function FuhrparkPage() {
                 onClose={() => { setModalOpen(false); setSelectedFahrzeug(undefined); }}
                 onSave={handleSaveReservierung}
                 fahrzeug={selectedFahrzeug}
+                projektId={projektId}
             />
         </div>
     );

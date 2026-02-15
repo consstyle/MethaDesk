@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { mockStore } from '@/lib/mock/store';
+import { ProjectService } from '@/lib/services/projectService';
+import { FleetService } from '@/lib/services/fleetService';
 import { Fahrzeug, FahrzeugReservierung, Projekt } from '@/types';
 import { X, CalendarDays } from 'lucide-react';
 
@@ -17,7 +18,9 @@ interface ReservierungModalProps {
 
 export function ReservierungModal({ isOpen, onClose, onSave, fahrzeug }: ReservierungModalProps) {
     const [projekte, setProjekte] = useState<Projekt[]>([]);
-    const [fahrzeuge, setFahrzeuge] = useState<Fahrzeug[]>([]);
+    const [fahrzeugeList, setFahrzeugeList] = useState<Fahrzeug[]>([]);
+    const [loadingData, setLoadingData] = useState(false);
+
     const [form, setForm] = useState({
         fahrzeugId: fahrzeug?.id || '',
         projektId: '',
@@ -29,9 +32,21 @@ export function ReservierungModal({ isOpen, onClose, onSave, fahrzeug }: Reservi
     });
 
     useEffect(() => {
-        setProjekte(mockStore.getProjekte());
-        setFahrzeuge(mockStore.getFahrzeuge());
-    }, []);
+        if (isOpen) {
+            setLoadingData(true);
+            Promise.all([
+                ProjectService.getProjekte(),
+                FleetService.getFahrzeuge()
+            ]).then(([p, f]) => {
+                setProjekte(p);
+                setFahrzeugeList(f);
+            }).catch(err => {
+                console.error('Failed to load dropdown data', err);
+            }).finally(() => {
+                setLoadingData(false);
+            });
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         if (fahrzeug) {
@@ -41,25 +56,28 @@ export function ReservierungModal({ isOpen, onClose, onSave, fahrzeug }: Reservi
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.fahrzeugId || !form.baustelle || !form.reserviertAb) return;
 
+        // Note: ProjectService/FleetService usage here is just for data referencing
+        // Actual save logic is handled by parent via onSave
         const selectedProjekt = projekte.find(p => p.id === form.projektId);
-        const newReservierung: FahrzeugReservierung = {
-            id: `res-${Date.now()}`,
+
+        // Construct object - ID handled by backend/service usually, but here we pass object stricture
+        const newReservierung: any = {
             fahrzeugId: form.fahrzeugId,
-            projektId: form.projektId || '',
-            projektName: selectedProjekt ? `${selectedProjekt.projektnummer} – ${selectedProjekt.projektname}` : '',
+            projektId: form.projektId || null,
+            projektName: selectedProjekt ? `${selectedProjekt.projektnummer} – ${selectedProjekt.projektname}` : undefined,
             baustelle: form.baustelle,
             reserviertAb: form.reserviertAb,
             reserviertBis: form.reserviertBis || undefined,
             reserviertDurch: form.reserviertDurch || undefined,
             bemerkung: form.bemerkung || undefined,
-            createdAt: new Date().toISOString(),
+            // createdAt handled by DB or Service
         };
         onSave(newReservierung);
-        onClose();
+        // We don't close here, parent handles it after successful save
     };
 
     const projektOptions = [
@@ -69,7 +87,7 @@ export function ReservierungModal({ isOpen, onClose, onSave, fahrzeug }: Reservi
 
     const fahrzeugOptions = [
         { label: 'Fahrzeug wählen...', value: '' },
-        ...fahrzeuge.map(f => ({ label: `${f.bezeichnung} (${f.inventarnummer})`, value: f.id })),
+        ...fahrzeugeList.map(f => ({ label: `${f.bezeichnung} (${f.inventarnummer})`, value: f.id })),
     ];
 
     return (
@@ -99,6 +117,10 @@ export function ReservierungModal({ isOpen, onClose, onSave, fahrzeug }: Reservi
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    {loadingData && (
+                        <div className="text-center py-2 text-sm text-muted-foreground">Lade Daten...</div>
+                    )}
+
                     {!fahrzeug && (
                         <Select
                             label="Fahrzeug"
@@ -158,7 +180,7 @@ export function ReservierungModal({ isOpen, onClose, onSave, fahrzeug }: Reservi
                         <Button
                             type="submit"
                             className="font-bold shadow-lg shadow-primary/20"
-                            disabled={!form.fahrzeugId || !form.baustelle || !form.reserviertAb}
+                            disabled={!form.fahrzeugId || !form.baustelle || !form.reserviertAb || loadingData}
                         >
                             Reservierung erstellen
                         </Button>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,9 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { ReservierungModal } from '@/components/shared/ReservierungModal';
-import { mockStore } from '@/lib/mock/store';
+import { FleetService } from '@/lib/services/fleetService';
 import { Fahrzeug, FahrzeugKategorie, FahrzeugStatus, FahrzeugReservierung } from '@/types';
-import { ArrowLeft, Save, Edit, Car, CalendarPlus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Edit, Car, CalendarPlus, Trash2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
 const KATEGORIE_OPTIONS = [
@@ -58,92 +58,137 @@ export default function FahrzeugDetailPage() {
     const [modalOpen, setModalOpen] = useState(false);
     const [form, setForm] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadData = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const [fz, res] = await Promise.all([
+                FleetService.getFahrzeugById(id),
+                FleetService.getReservierungenByFahrzeug(id)
+            ]);
+
+            if (fz) {
+                setFahrzeug(fz);
+                setForm({
+                    bezeichnung: fz.bezeichnung,
+                    kategorie: fz.kategorie,
+                    inventarnummer: fz.inventarnummer,
+                    fabrikat: fz.fabrikat || '',
+                    typ: fz.typ || '',
+                    seriennummer: fz.seriennummer || '',
+                    farbe: fz.farbe || '',
+                    kennzeichen: fz.kennzeichen || '',
+                    plattformhoehe: fz.plattformhoehe || '',
+                    masse: fz.masse || '',
+                    leistung: fz.leistung || '',
+                    gewicht: fz.gewicht || '',
+                    reichweite: fz.reichweite || '',
+                    nutzlast: fz.nutzlast || '',
+                    antrieb: fz.antrieb || '',
+                    baujahr: fz.baujahr?.toString() || '',
+                    spezHinweis: fz.spezHinweis || '',
+                    kaufjahr: fz.kaufjahr || '',
+                    geprueftBis: fz.geprueftBis || '',
+                    abgaswartung: fz.abgaswartung || '',
+                    status: fz.status,
+                    bemerkung: fz.bemerkung || '',
+                });
+                setReservierungen(res);
+            } else {
+                setError('Fahrzeug nicht gefunden.');
+            }
+        } catch (err) {
+            console.error('Error loading detail data:', err);
+            setError('Fehler beim Laden der Daten.');
+        } finally {
+            setLoading(false);
+        }
+    }, [id]);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            const allFz = mockStore.getFahrzeuge();
-            const found = allFz.find((f: Fahrzeug) => f.id === id);
-            if (found) {
-                setFahrzeug(found);
-                setForm({
-                    bezeichnung: found.bezeichnung,
-                    kategorie: found.kategorie,
-                    inventarnummer: found.inventarnummer,
-                    fabrikat: found.fabrikat || '',
-                    typ: found.typ || '',
-                    seriennummer: found.seriennummer || '',
-                    farbe: found.farbe || '',
-                    kennzeichen: found.kennzeichen || '',
-                    plattformhoehe: found.plattformhoehe || '',
-                    masse: found.masse || '',
-                    leistung: found.leistung || '',
-                    gewicht: found.gewicht || '',
-                    reichweite: found.reichweite || '',
-                    nutzlast: found.nutzlast || '',
-                    antrieb: found.antrieb || '',
-                    baujahr: found.baujahr?.toString() || '',
-                    spezHinweis: found.spezHinweis || '',
-                    kaufjahr: found.kaufjahr || '',
-                    geprueftBis: found.geprueftBis || '',
-                    abgaswartung: found.abgaswartung || '',
-                    status: found.status,
-                    bemerkung: found.bemerkung || '',
-                });
-            }
-            const allRes = mockStore.getReservierungen();
-            setReservierungen(allRes.filter((r: FahrzeugReservierung) => r.fahrzeugId === id));
-            setLoading(false);
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [id]);
+        loadData();
+    }, [loadData]);
 
     const update = (field: string, value: string) => setForm(prev => ({ ...prev, [field]: value }));
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!fahrzeug) return;
-        const updated: Fahrzeug = {
-            ...fahrzeug,
-            bezeichnung: form.bezeichnung,
-            kategorie: form.kategorie as FahrzeugKategorie,
-            inventarnummer: form.inventarnummer,
-            fabrikat: form.fabrikat || undefined,
-            typ: form.typ || undefined,
-            seriennummer: form.seriennummer || undefined,
-            farbe: form.farbe || undefined,
-            kennzeichen: form.kennzeichen || undefined,
-            plattformhoehe: form.plattformhoehe || undefined,
-            masse: form.masse || undefined,
-            leistung: form.leistung || undefined,
-            gewicht: form.gewicht || undefined,
-            reichweite: form.reichweite || undefined,
-            nutzlast: form.nutzlast || undefined,
-            antrieb: form.antrieb || undefined,
-            baujahr: form.baujahr ? parseInt(form.baujahr) : undefined,
-            spezHinweis: form.spezHinweis || undefined,
-            kaufjahr: form.kaufjahr || undefined,
-            geprueftBis: form.geprueftBis || undefined,
-            abgaswartung: form.abgaswartung || undefined,
-            status: form.status as FahrzeugStatus,
-            bemerkung: form.bemerkung || undefined,
-        };
-        const allFz = mockStore.getFahrzeuge();
-        mockStore.saveFahrzeuge(allFz.map((f: Fahrzeug) => f.id === id ? updated : f));
-        setFahrzeug(updated);
-        setEditing(false);
+        try {
+            const updatedData: Partial<Fahrzeug> = {
+                bezeichnung: form.bezeichnung,
+                kategorie: form.kategorie as FahrzeugKategorie,
+                inventarnummer: form.inventarnummer,
+                fabrikat: form.fabrikat || undefined,
+                typ: form.typ || undefined,
+                seriennummer: form.seriennummer || undefined,
+                farbe: form.farbe || undefined,
+                kennzeichen: form.kennzeichen || undefined,
+                plattformhoehe: form.plattformhoehe || undefined,
+                masse: form.masse || undefined,
+                leistung: form.leistung || undefined,
+                gewicht: form.gewicht || undefined,
+                reichweite: form.reichweite || undefined,
+                nutzlast: form.nutzlast || undefined,
+                antrieb: form.antrieb || undefined,
+                baujahr: form.baujahr ? parseInt(form.baujahr) : undefined,
+                spezHinweis: form.spezHinweis || undefined,
+                kaufjahr: form.kaufjahr || undefined,
+                geprueftBis: form.geprueftBis || undefined,
+                abgaswartung: form.abgaswartung || undefined,
+                status: form.status as FahrzeugStatus,
+                bemerkung: form.bemerkung || undefined,
+            };
+
+            const updatedFahrzeug = await FleetService.updateFahrzeug(id, updatedData);
+            setFahrzeug(updatedFahrzeug);
+            setEditing(false);
+        } catch (err) {
+            console.error('Error updating fahrzeug:', err);
+            alert('Fehler beim Speichern der Änderungen.');
+        }
     };
 
-    const handleDeleteReservierung = (resId: string) => {
+    const handleDeleteReservierung = async (resId: string) => {
         if (!confirm('Reservierung wirklich löschen?')) return;
-        const allRes = mockStore.getReservierungen();
-        const updated = allRes.filter((r: FahrzeugReservierung) => r.id !== resId);
-        mockStore.saveReservierungen(updated);
-        setReservierungen(updated.filter((r: FahrzeugReservierung) => r.fahrzeugId === id));
+        try {
+            await FleetService.deleteReservierung(resId);
+            setReservierungen(prev => prev.filter(r => r.id !== resId));
+        } catch (err) {
+            console.error('Error deleting reservation:', err);
+            alert('Fehler beim Löschen der Reservierung.');
+        }
     };
 
-    const handleSaveReservierung = (newRes: FahrzeugReservierung) => {
-        const allRes = mockStore.getReservierungen();
-        mockStore.saveReservierungen([...allRes, newRes]);
-        setReservierungen(prev => [...prev, newRes]);
+    const handleSaveReservierung = async (newRes: FahrzeugReservierung) => {
+        try {
+            const createdRes = await FleetService.createReservierung({
+                fahrzeugId: newRes.fahrzeugId,
+                projektId: newRes.projektId,
+                baustelle: newRes.baustelle,
+                reserviertAb: newRes.reserviertAb,
+                reserviertBis: newRes.reserviertBis,
+                reserviertDurch: newRes.reserviertDurch,
+                bemerkung: newRes.bemerkung
+            });
+
+            // Update local state
+            setReservierungen(prev => [...prev, createdRes]);
+
+            // Also update vehicle status if needed
+            if (fahrzeug && fahrzeug.status !== 'reserviert') {
+                const updatedFz = await FleetService.updateFahrzeug(fahrzeug.id, { status: 'reserviert' });
+                setFahrzeug(updatedFz);
+                // Update form state to match
+                setForm(prev => ({ ...prev, status: 'reserviert' }));
+            }
+
+            setModalOpen(false);
+        } catch (err) {
+            console.error('Error creating reservation:', err);
+            alert('Fehler beim Erstellen der Reservierung.');
+        }
     };
 
     if (loading) {
@@ -154,11 +199,13 @@ export default function FahrzeugDetailPage() {
         );
     }
 
-    if (!fahrzeug) {
+    if (error || !fahrzeug) {
         return (
             <div className="text-center py-20">
-                <Car className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-muted-foreground font-bold">Fahrzeug nicht gefunden</p>
+                <div className="flex justify-center mb-4">
+                    <AlertTriangle className="h-12 w-12 text-red-500" />
+                </div>
+                <p className="text-foreground font-bold text-lg">{error || 'Fahrzeug nicht gefunden'}</p>
                 <Link href="/fuhrpark">
                     <Button variant="ghost" className="mt-4">Zurück zum Fuhrpark</Button>
                 </Link>
