@@ -40,7 +40,7 @@ export function Sidebar({ projektId }: { projektId: string }) {
         },
         { title: 'Ausführung', href: `/${projektId}/ausfuehrung`, icon: Hammer },
         { title: 'Werkhof', href: `/${projektId}/werkhof`, icon: Warehouse },
-        { title: 'Fuhrpark', href: `/${projektId}/fuhrpark`, icon: Car },
+        { title: 'Fuhrpark', href: `/fuhrpark`, icon: Car },
         { title: 'Mitarbeiter', href: `/${projektId}/mitarbeiter`, icon: Users },
         { title: 'Nachrichten', href: `/${projektId}/chat`, icon: MessageSquare },
         // { title: 'Berichte', href: `/${projektId}/berichte`, icon: FileText }, // Removed per request

@@ -51,17 +51,27 @@ export default function ProjektePage() {
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {projekte.map((p) => (
-                        <Card key={p.id} className="group hover:border-primary/30 transition-all hover:shadow-xl hover:-translate-y-1 duration-300">
-                            <CardHeader className="pb-4">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="text-xs font-bold text-primary bg-primary/5 px-2 py-1 rounded-md">
-                                        {p.projektnummer}
-                                    </span>
-                                    <Badge variant={p.status === 'in arbeit' ? 'info' : 'warning'}>
+                        <Card key={p.id} className="group hover:border-primary/30 transition-all hover:shadow-xl hover:-translate-y-1 duration-300 overflow-hidden">
+                            <div className="h-32 w-full overflow-hidden relative">
+                                <img
+                                    src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=800&auto=format&fit=crop"
+                                    alt="Projektbild"
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-50" />
+                                <div className="absolute top-4 right-4">
+                                    <Badge variant={p.status === 'in arbeit' ? 'info' : 'warning'} className="shadow-sm">
                                         {p.status}
                                     </Badge>
+                                </div>
+                            </div>
+                            <CardHeader className="pb-4 pt-6 relative">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-md border border-primary/20">
+                                        {p.projektnummer}
+                                    </span>
                                 </div>
                                 <CardTitle className="text-xl font-bold text-foreground line-clamp-1">
                                     {p.projektname}
@@ -90,18 +100,7 @@ export default function ProjektePage() {
                         </Card>
                     ))}
 
-                    {(currentUser?.role === 'admin' || currentUser?.role === 'projektleiter') && (
-                        <Card
-                            className="border-dashed border-2 border-border bg-transparent shadow-none hover:border-primary/50 hover:bg-muted/50 cursor-pointer flex flex-col items-center justify-center p-8 transition-colors group"
-                            onClick={() => router.push('/projekte/erfassen')}
-                        >
-                            <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center mb-4 group-hover:bg-primary/10 group-hover:text-primary transition-colors text-muted-foreground">
-                                <Plus className="h-8 w-8" />
-                            </div>
-                            <p className="font-bold text-foreground/70 group-hover:text-primary">Neues Projekt erstellen</p>
-                            <p className="text-xs text-muted-foreground mt-1">Legen Sie ein neues Bauvorhaben an</p>
-                        </Card>
-                    )}
+
                 </div>
             </main>
         </div>

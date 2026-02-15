@@ -30,6 +30,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
+    "pdf-parse": "^2.4.5",
+    "pdfjs-dist": "^4.0.379",
     "typescript": "^5"
   }
 }
