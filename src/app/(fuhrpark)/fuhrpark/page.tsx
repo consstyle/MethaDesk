@@ -218,14 +218,14 @@ export default function FuhrparkPage() {
             </div>
 
             {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs>
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                     <TabsList>
-                        <TabsTrigger value="fahrzeuge">
+                        <TabsTrigger active={activeTab === 'fahrzeuge'} onClick={() => setActiveTab('fahrzeuge')}>
                             <Car className="h-4 w-4 mr-2" />
                             Fahrzeuge
                         </TabsTrigger>
-                        <TabsTrigger value="reservierungen">
+                        <TabsTrigger active={activeTab === 'reservierungen'} onClick={() => setActiveTab('reservierungen')}>
                             <Calendar className="h-4 w-4 mr-2" />
                             Reservierungen ({reservierungen.length})
                         </TabsTrigger>
@@ -246,7 +246,7 @@ export default function FuhrparkPage() {
                 </div>
 
                 {/* Tab: Fahrzeuge */}
-                <TabsContent value="fahrzeuge">
+                <TabsContent active={activeTab === 'fahrzeuge'}>
                     <Card>
                         <CardContent className="p-0">
                             {loading ? (
@@ -347,7 +347,7 @@ export default function FuhrparkPage() {
                 </TabsContent>
 
                 {/* Tab: Reservierungen */}
-                <TabsContent value="reservierungen">
+                <TabsContent active={activeTab === 'reservierungen'}>
                     <div className="flex justify-end mb-4">
                         <Button
                             className="font-bold shadow-lg shadow-primary/20"
