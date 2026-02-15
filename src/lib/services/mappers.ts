@@ -17,6 +17,7 @@ export const ProjectMapper = {
         kanton: db.kanton,
         status: db.status as any,
         createdAt: db.created_at,
+        createdBy: db.created_by || undefined,
         // TODO: Map these when we have relations or extended profile data
         projektleiter: undefined,
         deviseur: undefined,
@@ -34,6 +35,7 @@ export const ProjectMapper = {
         ort: app.ort,
         kanton: app.kanton,
         status: app.status,
+        created_by: app.createdBy,
     })
 };
 
@@ -107,5 +109,28 @@ export const ReservationMapper = {
         reserviert_bis: app.reserviertBis,
         reserviert_durch: app.reserviertDurch,
         bemerkung: app.bemerkung,
+    })
+};
+
+type DBLieferanten = Database['public']['Tables']['lieferanten']['Row'];
+
+export const SupplierMapper = {
+    toApp: (db: DBLieferanten): any => ({ // Type as Lieferant from @/types but avoiding circular dep issues if any, using 'any' temporarily or import correctly.
+        // Actually imports are fine.
+        id: db.id,
+        name: db.name,
+        kontakt: db.kontakt || '',
+        email: db.email || '',
+        telefon: db.telefon || '',
+        adresse: db.adresse || undefined,
+        notizen: db.notizen || undefined,
+    }),
+    toDB: (app: any) => ({
+        name: app.name,
+        kontakt: app.kontakt,
+        email: app.email,
+        telefon: app.telefon,
+        adresse: app.adresse,
+        notizen: app.notizen,
     })
 };

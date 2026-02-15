@@ -5,7 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { ProjectBanner } from '@/components/layout/ProjectBanner';
 import { useProjekt } from '@/lib/context/ProjektContext';
-import { mockStore } from '@/lib/mock/store';
+import { ProjectService } from '@/lib/services/projectService';
 import { useParams, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
@@ -20,15 +20,25 @@ export default function DashboardLayout({
     const router = useRouter();
 
     useEffect(() => {
-        if (!loading && !activeProjekt) {
-            const projects = mockStore.getProjekte();
-            const project = projects.find((p: any) => p.id === projektId);
-            if (project) {
-                setActiveProjekt(project);
-            } else {
-                router.push('/projekte');
+        const validateProject = async () => {
+            if (!loading && !activeProjekt) {
+                // Try to fetch project from Supabase
+                try {
+                    const project = await ProjectService.getProjektById(projektId);
+                    if (project) {
+                        setActiveProjekt(project);
+                    } else {
+                        // Project not found, redirect
+                        router.push('/projekte');
+                    }
+                } catch (error) {
+                    console.error("Failed to validate project:", error);
+                    router.push('/projekte');
+                }
             }
-        }
+        };
+
+        validateProject();
     }, [projektId, activeProjekt, loading, setActiveProjekt, router]);
 
     if (loading || !activeProjekt) {

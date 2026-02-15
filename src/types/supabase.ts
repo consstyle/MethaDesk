@@ -200,6 +200,134 @@ export interface Database {
                     created_at?: string
                 }
             }
+            lieferanten: {
+                Row: {
+                    id: string
+                    name: string
+                    kontakt: string | null
+                    email: string | null
+                    telefon: string | null
+                    adresse: string | null
+                    notizen: string | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    name: string
+                    kontakt?: string | null
+                    email?: string | null
+                    telefon?: string | null
+                    adresse?: string | null
+                    notizen?: string | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    name?: string
+                    kontakt?: string | null
+                    email?: string | null
+                    telefon?: string | null
+                    adresse?: string | null
+                    notizen?: string | null
+                    created_at?: string
+                }
+            }
+            teilsysteme: {
+                Row: {
+                    id: string
+                    projekt_id: string
+                    teilsystem_nummer: string | null
+                    name: string
+                    beschreibung: string | null
+                    status: string
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    projekt_id: string
+                    teilsystem_nummer?: string | null
+                    name: string
+                    beschreibung?: string | null
+                    status?: string
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    projekt_id?: string
+                    teilsystem_nummer?: string | null
+                    name?: string
+                    beschreibung?: string | null
+                    status?: string
+                    created_at?: string
+                    updated_at?: string
+                }
+            }
+            positionen: {
+                Row: {
+                    id: string
+                    teilsystem_id: string
+                    positionsnummer: string | null
+                    name: string
+                    menge: number | null
+                    einheit: string | null
+                    status: string
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    teilsystem_id: string
+                    positionsnummer?: string | null
+                    name: string
+                    menge?: number | null
+                    einheit?: string | null
+                    status?: string
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    teilsystem_id?: string
+                    positionsnummer?: string | null
+                    name?: string
+                    menge?: number | null
+                    einheit?: string | null
+                    status?: string
+                    created_at?: string
+                    updated_at?: string
+                }
+            }
+            material: {
+                Row: {
+                    id: string
+                    position_id: string | null
+                    lieferant_id: string | null
+                    name: string
+                    status: string
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    position_id?: string | null
+                    lieferant_id?: string | null
+                    name: string
+                    status?: string
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    position_id?: string | null
+                    lieferant_id?: string | null
+                    name?: string
+                    status?: string
+                    created_at?: string
+                    updated_at?: string
+                }
+            }
         }
     }
 }

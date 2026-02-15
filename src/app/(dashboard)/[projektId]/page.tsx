@@ -1,27 +1,67 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Layers, ListTodo, Package, Users, Plus, ArrowUpRight, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { SubsystemService } from '@/lib/services/subsystemService';
+import { ProjectService } from '@/lib/services/projectService';
 
 export default function OverviewPage() {
-    const { projektId } = useParams();
+    const { projektId } = useParams() as { projektId: string };
+    const [loading, setLoading] = useState(true);
+    const [counts, setCounts] = useState({ teilsysteme: 0, positionen: 0, material: 0, beteiligte: 0 });
+    const [recentActivity, setRecentActivity] = useState<any[]>([]);
+
+    useEffect(() => {
+        const loadDashboardData = async () => {
+            setLoading(true);
+            try {
+                const [tsCount, posCount, matCount, activities, project] = await Promise.all([
+                    SubsystemService.getTeilsystemCount(projektId),
+                    SubsystemService.getPositionCount(projektId),
+                    SubsystemService.getMaterialCount(projektId),
+                    SubsystemService.getRecentActivity(projektId),
+                    ProjectService.getProjektById(projektId)
+                ]);
+
+                // Calculate participants from project roles
+                let teamCount = 0;
+                if (project) {
+                    if (project.bauleiter) teamCount++;
+                    if (project.projektleiter) teamCount++;
+                    if (project.polier) teamCount++;
+                    if (project.bimKonstrukteur) teamCount++;
+                }
+
+                setCounts({
+                    teilsysteme: tsCount,
+                    positionen: posCount,
+                    material: matCount,
+                    beteiligte: teamCount
+                });
+                setRecentActivity(activities);
+
+            } catch (error) {
+                console.error("Failed to load dashboard data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (projektId) {
+            loadDashboardData();
+        }
+    }, [projektId]);
 
     const stats = [
-        { label: 'Teilsysteme', value: '12', sub: '2 offen', icon: Layers, color: 'text-blue-600', bg: 'bg-blue-50' },
-        { label: 'Positionen', value: '84', sub: '15 heute', icon: ListTodo, color: 'text-orange-600', bg: 'bg-orange-50' },
-        { label: 'Material', value: '342', sub: '54 bestellt', icon: Package, color: 'text-green-600', bg: 'bg-green-50' },
-        { label: 'Beteiligte', value: '8', sub: 'Mitarbeiter', icon: Users, color: 'text-purple-600', bg: 'bg-purple-50' },
-    ];
-
-    const recentActivity = [
-        { action: 'Teilsystem erfasst', user: 'Hans Müller', time: 'vor 15 Min', target: 'Fassade Nord', link: `/${projektId}/teilsysteme` },
-        { action: 'Material bestellt', user: 'Admin', time: 'vor 2 Std', target: 'Alu-Profile P2', link: `/${projektId}/material` },
-        { action: 'Position abgeschlossen', user: 'Max Muster', time: 'vor 4 Std', target: 'Glasfront Sektor A', link: `/${projektId}/positionen` },
+        { label: 'Teilsysteme', value: counts.teilsysteme.toString(), sub: 'Gesamt', icon: Layers, color: 'text-blue-600', bg: 'bg-blue-50' },
+        { label: 'Positionen', value: counts.positionen.toString(), sub: 'Gesamt', icon: ListTodo, color: 'text-orange-600', bg: 'bg-orange-50' },
+        { label: 'Material', value: counts.material.toString(), sub: 'Gesamt', icon: Package, color: 'text-green-600', bg: 'bg-green-50' },
+        { label: 'Beteiligte', value: counts.beteiligte.toString(), sub: 'Projektteam', icon: Users, color: 'text-purple-600', bg: 'bg-purple-50' },
     ];
 
     return (
@@ -42,7 +82,9 @@ export default function OverviewPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {stats.map((stat, i) => (
+                {loading ? Array(4).fill(0).map((_, i) => (
+                    <Card key={i} className="animate-pulse bg-muted h-32" />
+                )) : stats.map((stat, i) => (
                     <Card key={i} className="hover:shadow-lg transition-shadow">
                         <CardContent className="p-6">
                             <div className="flex justify-between items-start">
@@ -72,13 +114,20 @@ export default function OverviewPage() {
                             <Clock className="h-5 w-5 text-primary" />
                             Letzte Aktivitäten
                         </CardTitle>
-                        <Link href={`/${projektId}/berichte`}>
+                        {/* Link to reports if it exists, otherwise hide */}
+                        {/* <Link href={`/${projektId}/berichte`}>
                             <Button variant="ghost" size="sm" className="font-bold text-primary">Alle anzeigen</Button>
-                        </Link>
+                        </Link> */}
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-6">
-                            {recentActivity.map((act, i) => (
+                            {loading ? (
+                                <div className="space-y-4">
+                                    {Array(3).fill(0).map((_, i) => <div key={i} className="h-12 bg-muted animate-pulse rounded-md" />)}
+                                </div>
+                            ) : recentActivity.length === 0 ? (
+                                <div className="text-center text-muted-foreground py-8">Keine kÃ¼rzlichen AktivitÃ¤ten.</div>
+                            ) : recentActivity.map((act, i) => (
                                 <div key={i} className="flex items-center justify-between group">
                                     <div className="flex items-center gap-4">
                                         <div className="h-10 w-10 rounded-xl bg-accent flex items-center justify-center border border-border group-hover:bg-primary/10 transition-colors">
@@ -86,7 +135,7 @@ export default function OverviewPage() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-bold text-foreground">{act.action}: <span className="text-primary">{act.target}</span></p>
-                                            <p className="text-xs font-medium text-muted-foreground">{act.user} • {act.time}</p>
+                                            <p className="text-xs font-medium text-muted-foreground">{new Date(act.time).toLocaleDateString('de-CH')} {new Date(act.time).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}</p>
                                         </div>
                                     </div>
                                     <Link href={act.link}>

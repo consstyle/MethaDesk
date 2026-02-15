@@ -28,6 +28,7 @@ export interface Projekt {
   polier?: string;
   einkauf?: string;
   status: ProjektStatus;
+  createdBy?: string;
   createdAt: string;
 }
 
@@ -75,6 +76,8 @@ export interface Lieferant {
   kontakt: string;
   email: string;
   telefon: string;
+  adresse?: string;
+  notizen?: string;
 }
 
 export interface Mitarbeiter {

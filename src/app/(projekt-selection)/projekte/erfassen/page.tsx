@@ -1,17 +1,51 @@
 'use client';
 
 import React from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { mockStore } from '@/lib/mock/store';
-import { ArrowLeft, Save, Building2, MapPin, User, Hash } from 'lucide-react';
+import { ProjectService } from '@/lib/services/projectService';
+import { useProjekt } from '@/lib/context/ProjektContext';
+import { ArrowLeft, Save, Building2, MapPin, User, Hash, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+
+// Custom Select Component Wrapper for React Hook Form integration
+const FormSelect = React.forwardRef<
+    HTMLSelectElement,
+    { label: string; error?: string; options: { label: string; value: string }[] } & React.SelectHTMLAttributes<HTMLSelectElement>
+>(({ label, error, options, ...props }, ref) => (
+    <div className="space-y-2">
+        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{label}</label>
+        <select
+            ref={ref}
+            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            {...props}
+        >
+            {options.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+        </select>
+        {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+    </div>
+));
+FormSelect.displayName = "FormSelect";
+
+// Input Wrapper to match existing style props if needed (simulating the custom Input component seen in original file)
+const FormInput = React.forwardRef<HTMLInputElement, { label: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>>(
+    ({ label, error, className, ...props }, ref) => (
+        <div className="space-y-2">
+            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{label}</label>
+            <Input ref={ref} className={className} {...props} />
+            {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+        </div>
+    )
+);
+FormInput.displayName = "FormInput";
+
 
 const projektSchema = z.object({
     projektnummer: z.string().min(1, 'Projektnummer ist erforderlich'),
@@ -31,6 +65,7 @@ type ProjektValues = z.infer<typeof projektSchema>;
 
 export default function ProjektErfassenPage() {
     const router = useRouter();
+    const { currentUser } = useProjekt();
 
     const {
         register,
@@ -45,17 +80,20 @@ export default function ProjektErfassenPage() {
     });
 
     const onSubmit = async (data: ProjektValues) => {
-        await new Promise((resolve) => setTimeout(resolve, 800));
-
-        const all = mockStore.getProjekte();
-        const newProj = {
-            id: `p${Math.floor(1000 + Math.random() * 9000)}`,
-            ...data,
-            createdAt: new Date().toISOString()
-        };
-
-        mockStore.saveProjekte([...all, newProj]);
-        router.push(`/projekte`);
+        try {
+            await ProjectService.createProjekt({
+                ...data,
+                status: data.status as any, // Cast to any or ProjektStatus to satisfy type
+                createdBy: currentUser?.id
+            });
+            // toast.success('Projekt erfolgreich erstellt');
+            window.alert('Projekt erfolgreich erstellt');
+            router.push('/projekte');
+        } catch (error) {
+            console.error('Failed to create project:', error);
+            // toast.error('Fehler beim Erstellen des Projekts');
+            window.alert('Fehler beim Erstellen des Projekts');
+        }
     };
 
     return (
@@ -67,8 +105,8 @@ export default function ProjektErfassenPage() {
 
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Neues Projekt erfassen</h1>
-                    <p className="text-slate-500 font-medium">Legen Sie ein neues Bauvorhaben im System an.</p>
+                    <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Neues Projekt erfassen</h1>
+                    <p className="text-muted-foreground font-medium">Legen Sie ein neues Bauvorhaben im System an.</p>
                 </div>
             </div>
 
@@ -84,7 +122,7 @@ export default function ProjektErfassenPage() {
                         {/* Basic Info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="relative">
-                                <Input
+                                <FormInput
                                     label="Projektnummer *"
                                     placeholder="z.B. 2024-001"
                                     {...register('projektnummer')}
@@ -93,7 +131,7 @@ export default function ProjektErfassenPage() {
                                 <Hash className="absolute right-3 top-[38px] h-4 w-4 text-slate-300" />
                             </div>
                             <div className="relative">
-                                <Input
+                                <FormInput
                                     label="Projektname *"
                                     placeholder="Name des Bauvorhabens"
                                     {...register('projektname')}
@@ -109,25 +147,25 @@ export default function ProjektErfassenPage() {
                                 <MapPin className="h-4 w-4" />
                                 Standort
                             </h3>
-                            <Input
+                            <FormInput
                                 label="Strasse / Hausnummer"
                                 placeholder="Musterstrasse 123"
                                 {...register('strasse')}
                             />
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <Input
+                                <FormInput
                                     label="PLZ *"
                                     placeholder="8000"
                                     {...register('plz')}
                                     error={errors.plz?.message}
                                 />
-                                <Input
+                                <FormInput
                                     label="Ort *"
                                     placeholder="Zürich"
                                     {...register('ort')}
                                     error={errors.ort?.message}
                                 />
-                                <Input
+                                <FormInput
                                     label="Kanton *"
                                     placeholder="ZH"
                                     {...register('kanton')}
@@ -143,23 +181,23 @@ export default function ProjektErfassenPage() {
                                 Verantwortlichkeiten
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <Input
+                                <FormInput
                                     label="Projektleiter *"
                                     placeholder="Name"
                                     {...register('projektleiter')}
                                     error={errors.projektleiter?.message}
                                 />
-                                <Input
+                                <FormInput
                                     label="Bauleiter"
                                     placeholder="Name"
                                     {...register('bauleiter')}
                                 />
-                                <Input
+                                <FormInput
                                     label="Polier"
                                     placeholder="Name"
                                     {...register('polier')}
                                 />
-                                <Input
+                                <FormInput
                                     label="BIM Konstrukteur"
                                     placeholder="Name"
                                     {...register('bimKonstrukteur')}
@@ -168,7 +206,7 @@ export default function ProjektErfassenPage() {
                         </div>
 
                         <div className="pt-4 border-t border-slate-100">
-                            <Select
+                            <FormSelect
                                 label="Status *"
                                 options={[
                                     { label: 'Offen', value: 'offen' },
@@ -185,7 +223,12 @@ export default function ProjektErfassenPage() {
                             <Button type="button" variant="outline" className="font-bold h-12 px-8">Abbrechen</Button>
                         </Link>
                         <Button type="submit" className="font-bold h-12 px-10 shadow-lg shadow-primary/20" disabled={isSubmitting}>
-                            {isSubmitting ? 'Wird erstellt...' : (
+                            {isSubmitting ? (
+                                <span className="flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Wird erstellt...
+                                </span>
+                            ) : (
                                 <span className="flex items-center gap-2">
                                     <Save className="h-5 w-5" />
                                     Projekt erstellen
