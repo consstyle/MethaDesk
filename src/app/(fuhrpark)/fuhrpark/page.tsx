@@ -218,6 +218,7 @@ export default function FuhrparkPage() {
             </div>
 
             {/* Tabs */}
+            {/* Tabs - Fixed props for build */}
             <Tabs>
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                     <TabsList>
